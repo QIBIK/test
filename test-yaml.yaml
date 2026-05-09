@@ -1,0 +1,81 @@
+# Простой деплоймент для Python Code Auditor MVP
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: code-audit
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-audit-app
+  namespace: code-audit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-audit
+  template:
+    metadata:
+      labels:
+        app: code-audit
+    spec:
+      containers:
+        - name: app
+          image: python:3.11-slim
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              pip install fastapi==0.109.0 uvicorn==0.27.0 ruff==0.1.14 python-multipart==0.0.9
+              mkdir -p /app/static /app/uploads
+              # Здесь должен быть твой код (main.py, scanner.py и т.д.)
+              # Для примера создаём заглушку
+              echo 'from fastapi import FastAPI
+app = FastAPI()
+@app.get("/")
+def root(): return {"status": "ok"}' > /app/main.py
+              cd /app && uvicorn main:app --host 0.0.0.0 --port 8000
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+      volumes:
+        - name: uploads
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-audit-service
+  namespace: code-audit
+spec:
+  selector:
+    app: code-audit
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-audit-nodeport
+  namespace: code-audit
+spec:
+  selector:
+    app: code-audit
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30080
+  type: NodePort
