@@ -1,7 +1,7 @@
 # Простой деплоймент для Python Code Auditor MVP
 
 apiVersion: v1
-kind: Namespace123
+kin: Namespace123
 metadata:
   name: code-audit
 ---
